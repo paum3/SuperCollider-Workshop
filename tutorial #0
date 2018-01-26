@@ -405,6 +405,8 @@ Server.local.options.numOutputBusChannels = 2
 // pre audio server SC defaultne rezervuje premennu 's'
 s.boot
 s.quit
+s.freeAll // zastavi prehravanie vsetkych zvukov
+// DOLEZITA klavaesova skratka je Ctrl + .    = s.freeAll
 
 
 
@@ -433,7 +435,9 @@ a = {
 )
 
 
-a.free
+a.free // zastavi prehravanie zvuku a 'uvolni' sa Synth z pamati
+
+
 
 
 
