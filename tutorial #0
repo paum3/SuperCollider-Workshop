@@ -225,7 +225,7 @@ a[1] // druhy prvok - "zemiaky"
 
 
 (
-var stroj, hriadel = 5, auto; // premenna 'auto'
+var stroj, hriadel = 5, auto; // vsetko su premenne. 
 var b,a = 56;
 auto = 3; // danie hodnoty 3 do nej
 b = 5.6;
@@ -235,9 +235,6 @@ c.postln;
 )
 
 auto // auto bola definovana ako lokalna premenna v bloku ( vyzsie), mimo bloku je to nedefinovane --> nil
-
-
-
 
 b // pozri co je tu
 
@@ -299,19 +296,21 @@ a // a tu bude nase stare 'a' z hora
 [1,2,3,4,5] // toto je Array
 [1,2,3,4,5] + 2 // jednoducha matematicka operacia s kazdym prvkom pola
 [1,2,3,4,5].mirror // vyskusaj
-[1,2,3,4,5].sramble
+[1,2,3,4,5].sramble // ERROR, je tam typo chyba ma byt:
+[1,2,3,4,5].scramble
 [1,2,3,4,5].at(2) // vypis prvok v indexom (poradim) 2.  !!! v computer music sa pocitat zacina od NULY,
 // teda  .at(2) vypise do post window treti prvok. 0,1,2 . teda trojku.
 
 [1,5,23,8,-23,4].plot
 
 // random generators
-2.rand2
-// random generators
-10.rand
-10.0.rand
-rrand(50,60)
-2.rand2
+/////////////
+
+10.rand;
+10.0.rand; // vidis rozdiel?
+2.rand2;
+rrand(50,60);
+[5,8,95,63].choose;
 
 // Supercollider ma velmy dobry Help system, ktory stoji za to studovat. Ak sa chceme dostat k dokumentacii urciteho prikazu
 // staci man na nom kurzor a stlacit Ctrl + d
