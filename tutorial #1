@@ -1,0 +1,571 @@
+////////////////////////////////////////////////////////////////////
+/////////// SuperCollider Workshop #1 - Server.local, zaklady zvukovej syntezy I.
+////////////////////////////////////////
+///////////// Super zvuky v SuperCollideri///////////////////
+/////////////////////////////////////////////////Fero Kiraly///////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+/////////////// OBSAH //////////////////
+////////////////////////////////////////
+
+
+	//0) s = Server.local
+    //1) UGen -  freq, phase, mul, add
+    //2) Stereo - jednoducho
+ 	//3) Vibrato
+ 	//4) Tremolo
+
+
+
+
+
+
+
+
+//// 0)
+///////////////////// s = Server.local
+///////////////////////////////
+
+
+
+
+s.boot // Ako prve nabootujeme audio server. to iste ako Ctrl + B
+
+/*
+To ze pismeno 's' je  globalna premenna, ako jedina rezervovana defaultne pre audio server sme uz hovorili;
+To znamena ze defaulne je nastavene s = Server.local. Keby sme chceli da sa to zmenit ale, je dobre niektore zvyky nechat na pokoji.
+
+* Server.local znamena audio server na 'tomto' pocitaci. Kedze SC sa sklada zvlast z jazyka a serveru, je mozne spousiti server
+na inom pocitaci a komunikovat po sieti.
+
+je ale mozne spravit toto:
+
+a = Server.local
+a.boot
+
+vsetko bude hrat ok, ale nedoporucuje sa to z jednoducheho dovodu. pre Server.local sa zauzivalo pismeno 's'
+'s' ako Server.
+
+
+
+*/
+s.sampleRate // vzorkovacia frekvencia servera. Defaultne je to 44100 Hz, co je CD kvalita. Da sa to samozrejme zmenit na rozne ine hodnoty.
+
+/* to cislo suvisi s digitalizaciou zvuku. V skratke:
+- zvuk je chvenie = vlnenie = vlna
+- aby sme ho vedeli z realneho ( analogoveho) priestoru zadefinovat v pocitaci, treba ho zciselnit = zdigitalizovat.
+Treba sa dohodnut s pocitacom kolko hodnot za sekundu
+z tej vlny bude zaznamenavat/ prehravat. 44100Hz znamena ze riesi 44100 hodnot za sekundu.
+
+
+*/
+
+
+s.quit // vypnutie servera
+s.reboot // asi je jasne co to robi..
+s.freeAll // to iste ako Ctrl + .  teda vypne vsetky zvuky. Lepsie povedane uvolnia sa vsetky Nodes, ale o tom neskor.
+s.makeGui // vytvori male okno, kde su buttony... pozri
+s.record // zacne nahravat do suboru vsetky zvuky ktore SC generuje, do koncoly vypise nazov a cestu k suboru kde nahrava.
+s.stopRecording;
+
+Server.openHelpFile // kompet dokumentacia k triede (class) Server.
+// v dokumentacii (Helpe) netreba vzdy citat vsetko.
+// Dolezite precitat si pre zaciatok je popis triedy, a eventualne prebehnut ocami ake metody ponuka
+
+/*********/
+/* ULOHA */
+
+// skuste najst v dokumentacii Serveru metodu 'meter' a zistite co robi.
+
+
+
+
+
+
+
+
+
+
+//// 1)
+/////////////////////  UGen -  freq, phase, mul, add
+///////////////////////////////
+
+/*
+Zvukova synteza prebieha v SC audio serveri pomocou tried (classes) tzv. Ugens - Unit Generators
+aby sme ich mohli pouzivat musime ma server bootnuty
+
+s.boot
+
+vacsinou maju tieto generatory DVE HLAVNE METODY
+
+.ar audio rate - pouzivame tam kde chceme aby VYSLEDKOM toho generatora bol ZVUK, pri defaultnom samplerate to generuje 44100 cisel /sek
+.kr kontrol rate - VYSLEDOK ma byt cislo, ktorym ovplyvnujeme niektory z parametrov, napr. frekvenciu alebo panoramu, a to
+vacsinou nepotrebujeme menit 44100x za sekundu.  .kr funguje na frekvencii cca 700x za sekundu. Co je aj tak celkom dost,
+ale asi 64x menej ako .ar, cim setrime CPU (procesor pocitaca) - to je dovod preco tato metoda existuje.
+*/
+
+SinOsc.openHelpFile // pozri dokumentaciu
+
+/* v nej najdi tento riadok:
+
+    SinOsc.ar(freq: 440, phase: 0, mul: 1, add: 0)
+
+
+Tato informacia hovori o tom ze metoda '.ar' moze mat tieto 4 parametre v presne tomto poradi.
+Inak, pozri ze aj metoda .kr ma presne take iste poradie. Je to tak vzdy, ze obe metody pouzivaju rovnake parmetre,
+rozdiel je len v tom ako casto nam posielaju vysledok....
+Hodnoty ktore su tam zadane - Freq:440 su defaultne, co znamena ze ked nezadame nic, pouziju sa tie
+
+*/
+
+
+
+
+
+// Zakladne Ugens, pozri ich dokumentaciu a priklady v nej
+SinOsc
+LFSaw
+LFPulse
+LFTri
+LFNoise0
+LFNoise1
+MouseX
+MouseY
+
+
+// graf zakladnych oscilarorov (MouseX a MouseY tam nie je)
+(
+
+ {
+	[
+		SinOsc.kr(1),
+		LFSaw.kr(1),
+		LFTri.kr(1),
+		LFPulse.kr(1),
+		LFNoise0.kr(10),
+		LFNoise1.kr(10),
+	]
+}.plot(1,bounds:Rect(400,80,500,700))
+
+
+)
+
+
+
+
+/*
+
+ FREKVENCIA
+
+ - prvy parameter
+ - kolko kmitov za sekundu
+ - je cislo, jednotka Hz (hertz)
+ - pocutelne spektrum cloveka je cca  20 - 20000 Hz,
+
+*/
+
+
+//zacneme grafom
+{ [ SinOsc.kr(freq:1), SinOsc.kr(freq:10) ] }.plot(1) //takto vyzera Sinusova vlna o frekvencii 1Hz a 10Hz
+
+// a takto to znie..
+{SinOsc.ar(freq:200) * 0.2 }.play // nizky ton, 200Hz
+{SinOsc.ar(freq:5000) * 0.2 }.play // vysoky ton, 5000Hz
+
+// * 0.2 znamena, ze to bude tichsie. Vysvetlime neskor.
+
+
+/*
+  v hudbe casto pouzivame MIDI skalu.
+  Je to vlastne ciselny rad, ktory oznacuje tony od najnizieho po najvyzssi ( ako na klaviri )
+  c cis d dis e f fis g
+
+*/
+
+440.cpsmidi // prepocita 440 Hz do MIDI hodnoty ( 440 je tzv. komorne a (a1) )  --> 69, cps = cycles per second = Hz
+
+69.midicps // opak
+
+72.midicps // 523.2511306012 HZ = c2   je lahsie napisat 72.midicps ako 523.2511306012 ...
+
+
+{SinOsc.ar(freq:69.midicps) * 0.2 }.play // komorne a
+
+
+// kedze freq je prvy parameter metody .ar, tak nasledujuci prikaz je to iste:
+{SinOsc.ar(69.midicps) * 0.2 }.play // komorne a
+
+
+
+
+
+
+
+/*
+
+ FAZA
+
+ - druhy parameter
+ - faza nas zatial nebude velmi zaujimat, mozno neskor
+ - je cislo v rozmedzi 0 - 2*pi, je to nieco ako fazy mesiaca..
+
+*/
+
+// takto vyzera stale ten isty sinus, o frekvencii 1Hz, v styroch roznych fazach
+// tento blok spusti Ctrl + Enter
+
+(
+
+{ [ SinOsc.kr(freq:1,phase:0),
+	SinOsc.kr(freq:1,phase:pi/2),
+	SinOsc.kr(freq:1,phase:pi),
+	SinOsc.kr(freq:1,phase:pi / 2 *3)
+]}.plot(1) //takto vyzera Sinusova vlna o frekvencii 1Hz a 10Hz
+
+)
+
+
+
+
+
+
+/*
+
+ MUL =  MULTIPLICATION = nasobenie
+
+ - treti parameter - dolezity parameter - defaultne 1
+ - je to velkost, amplituda vlny
+ - je cislo v takom rozsahu, podla toho co robime. vysvetlim dalej.
+
+ ** POZOR, jedna z moznosti je ze to ovlyvnuje hlasitost a HLASITOST JE LEN 0 - 1**
+ nechcete pocut hlasitost 100 na sluchatkach. moze to byt nebezpecne pre vas sluch
+
+*/
+
+
+// ukazky v grafoch .kr
+( // spusti blok
+
+{
+  [ SinOsc.kr(freq:25, mul:1),  // amplituda 1
+	SinOsc.kr(freq:25, mul:0.5),// polovicna amplituda
+	SinOsc.kr(freq:25, mul:0.2),
+	SinOsc.kr(freq:25, mul:0) // amplituda je nulova, na grafe je rovna ciara
+ ] }.plot(1)
+
+)
+
+
+//ukazka na zvuku .ar :
+
+{ SinOsc.ar(freq:500, mul:0.5) }.play
+{ SinOsc.ar(freq:500, mul:0.2) }.play // tichsie
+{ SinOsc.ar(freq:500, mul:0) }.play // uplne ticho, nepocut nic
+
+
+// toto
+{ SinOsc.ar(500, mul:0.2) }.play
+{ SinOsc.ar(500) * 0.2 }.play //a toto, je to iste
+
+// nezalezi na tom ci vlnu nasobim "vo vnutri" parametrom mul, alebo "z vonku" klasicky cez znamienko *
+
+// dokaz na grafe:
+
+(
+
+{
+  [ SinOsc.kr(25, mul:1),  // plna amplituda
+	SinOsc.kr(25, mul:0.5),
+	SinOsc.kr(25) * 0.5  // rovnake ako riadok vyzsie
+ ] }.plot(1)
+
+)
+
+
+
+
+
+
+/*
+
+ ADD:
+ - stvrty parameter
+ - je to posun vlny hore alebo dole na grafe
+ - je cislo opat v takom rozsahu, podla toho co robime.
+
+ */
+
+
+// SinOsc ma add:0 (defaultne), takze sa vlna pohubyje v rozsau -1 ~ 1
+// ak zmenim add napriklad na 5, tak sa cela vlna posunie na grafe o 5 smerom hore
+// teda pojde v rozsahu  4 ~ 6
+
+
+// dokaz na grafe
+{ [ SinOsc.ar(10,add:0), SinOsc.ar(10,add:5)]}.plot(1)
+
+
+
+
+ /*
+   ZHRNUTIE MUL a ADD
+
+  - mul:  robi velkost vlny
+  - add:  posuva kde sa pohybuje vlna
+  - tento koncept je velmi dolezite pochopit
+
+
+  POZNAMKA
+  -existuje metoda .range(x,y), ktora, pokial nezmenime mul a add "vo vnutri" tak nam umozni jednoducho skalovat vlnu
+
+ nalsedujuce dva prikazy su totozne
+
+*/
+
+{SinOsc.kr(20,mul:10, add:3)}.plot(1) // amplituda 10, posun 3
+{SinOsc.kr(20).range(-7,13)}.plot(1)  //
+
+
+/*
+ULOHA
+
+pomocou .range vytvor vlnu ktora bude kmitat v rozpati 20 az 80
+
+*/
+{ SinOsc.ar(10).range(XX, YY)}.plot(1) // co bude XX a YY ?
+
+
+
+
+/*
+
+  ULOHA 2
+  - vsetky nasledujuce funkcie su totozne. vies preco?
+
+*/
+
+{ SinOsc.ar(freq:440, phase:0, mul:0.2, add:0) }.play
+
+{ SinOsc.ar(440, 0, 0.2, 0) }.play
+
+{ SinOsc.ar(mul:0.2) }.play
+
+{ SinOsc.ar * 0.2 }.play
+
+
+
+
+
+
+
+
+
+
+//// 2)
+///////////////////// Stereo - jednoducho
+///////////////////////////////
+
+/*
+ - signal UGenov defaultne ide len v kedno kanaly
+ - preto to pocujeme ako MONO - len v lavom,
+ - ak chceme vystup aj do praveho kanalu, tak zatial to spravime tak ze zduplikjeme signal
+*/
+
+2 // 2
+2.dup(2)  // [2,2] uz mame pole - Array
+2 ! 2 // to iste
+
+10.rand.dup(4); // Array 4 rovnake cisla  (najdi jedno nahodne cislo a zopakuj ho 4x)
+{ 10.rand }.dup(4)// Array 4 rozne cisla  (lebo tu sa funkcia zopakuje 4x, a teda sa 4 krat stale hlada nove nahodne cislo)
+
+// trojuholnikovy oscilator
+{ LFTri.kr(1) }.plot(1)
+{LFTri.ar(200) * 0.2 }.play; s.meter // MONO
+
+
+{LFTri.ar(200) * 0.2 ! 2 }.play; s.meter // STEREO ( mame dva kanaly a v kazdom je to iste..)
+
+
+// POZNAMKA, ak by sme napr potrebobvali naplit 8 kanalov napiseme '! 8';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//// 3)
+///////////////////// Vibrato
+///////////////////////////////
+
+
+
+/*
+  Vibrato je napr. ked huslista jemne hybe zapestim lavou rukou, na ktorej prsom drzi strunu, a prst sa jemne posuva o milimeter
+hore-dolu, cim sa vlastne o velmi malinko meni dlzka struny ktora znie,a tym aj vyska tonu.jej frekvencia
+
+Vyska tonu = frekvencia kmitania
+frekvencia sa udava v hertzoch = Hz (kmity/cykly za sekundu)
+440Hz je komorne 'A', teda hodnota podla ktorej sa dnes ladia akusticke nastroje. Castokrat je to ale torsku viac, 442Hz ..
+
+*/
+
+
+
+// na cisty sinusovy ton pouzijeme nas dobre znamy sinusovy oscilator ( generator) SinOsc s metodou '.ar' - audiorate
+
+{SinOsc.ar(440) * 0.2  ! 2}.play // c2
+// Ctrl + . pre koniec zvuku
+
+
+/*
+ - teraz chceme aby sa nasa zakladna frekvencia 440 menila na  "o trosku viac" a "o trosku menej"
+ - a nie skokom hned na novu hodnotu, ale postupne
+ - kolko to bude 'o trosku' to najdeme skusanim
+ - dolezite je ze chceme aby sa to menilo samo, cyklicky, donekonecna, az pokym sa nebudeme chciet ist bicyklovat
+ - vibrato ma aj svoju vlastnu frekvenciu, kolko krat sa meni za sekundi
+*/
+
+
+
+
+{ SinOsc.ar(440 + SinOsc.kr(5).range(-20,20) ) * 0.2 ! 2 }.play // vibrato  +/- 20Hz o frekvencii 5Hz, hasitost 0.2
+// - hodnota vibrata sa scitava s povodnou frekvenciou +
+// - hlavny oscilator je .ar   vibrato je .kr
+
+
+
+
+
+// to iste by sme mohli napisat ak takto, prehladnejsie:
+
+(
+{
+	var vibrato = SinOsc.kr(1).range(-20,20); // pripravime si vibrato oscilator an frekvencii 1Hz, v rozsahu -20 20
+	SinOsc.ar(440 + vibrato) * 0.2   ! 2// priratame ho k zakladnej frekvencii,  hlasitost 0.2
+	// takze to co pocujeme je meniaca sa frekvencia od 420 Hz do 460 Hz
+}.play
+)
+
+
+
+
+
+
+{ LFSaw.kr(1) }.plot(1) // LFSaw je oscilator vlny v tvare pily
+// oscilatory mozeeme lubovolne prepajaat tak ako v modlularnom analogovom systeme
+// v priklade nizsie budeme frekvenciu modulovat LFSaw, a dostaneme iny zvukovy vysledok ( to uz nie je vybrato, aj ked modulujeme ten isty parameter)
+
+
+(
+{
+	var vibrato = LFSaw.kr(1).range(-200,200); // LFSaw 1Hz, v rozsahu -200 200
+	SinOsc.ar(440 + vibrato) * 0.2  ! 2 // priratame ho k zakladnej frekvencii,  hlasitost 0.2
+	// takze to co pocujeme je meniaca sa frekvencia od 420 Hz do 460 Hz
+}.play
+)
+
+
+
+
+
+{ XLine.kr(1,200,1) }.plot(1) // XLine je exponencialny generator
+
+(
+{
+	var modfreq = XLine.kr(1,200,20);
+	var vibrato = LFSaw.kr(modfreq).range(-200,200); // LFSaw 1Hz, v rozsahu -200 200
+	SinOsc.ar(440 + vibrato) * 0.2  ! 2 // priratame ho k zakladnej frekvencii,  hlasitost 0.2
+	// takze to co pocujeme je meniaca sa frekvencia od 420 Hz do 460 Hz
+}.play
+)
+
+
+
+
+
+
+
+
+
+//// 3)
+///////////////////// Tremolo
+///////////////////////////////
+
+/*
+
+  - je cyklicka zmena hlasitosti
+  - technicky to iste ako vybrato, akurat modulujeme parameter mul
+  - kedze sa jedna o hlasitost, musime mysliet na to ze sa musime pohybovat v skale 0 - 1
+
+
+*/
+
+
+// nas pokusny kralik bude vlna tvaru pily 100Hz
+{LFSaw.ar(100) * 0.2 }.play // c2
+
+
+(
+{
+	var mod = SinOsc.kr(2).range(0,1); // 2Hz,  rozsah 0 - 1, lebo chcem menit hlasitost
+	LFSaw.ar(100, mul: mod) * 0.2  ! 2 // a aplikuje sa to sem, *0.2 uprava celkovej hlasitosti
+}.play
+)
+
+
+(
+{
+	var modfreq = MouseX.kr(1,20); // pohyb mysi na strany bude menit frekvenciu tremola
+	var mod = SinOsc.kr(modfreq).range(0,1);
+	LFSaw.ar(100, mul: mod) * 0.2  ! 2
+}.play
+)
+
+
+
+
+
+
+(
+
+{
+  var freq = 200;
+  var freqMod, ampMod;
+  var sig;
+  var amp = 0.2;
+
+  // fundamental freq kontrol
+  freq = MouseX.kr(200,800);
+
+
+  freqMod = LFNoise0.kr(20).range(freq,freq * 10).round(freq);
+  ampMod =  LFSaw.kr(1);
+
+
+  sig = SinOsc.ar(freq + freqMod, mul: ampMod);
+  sig = sig * amp;
+  sig ! 2 //stereo
+
+}.play
+
+
+)
+
+
+
+
