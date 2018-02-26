@@ -1,0 +1,299 @@
+////////////////////////////////////////////////////////////////////
+/////////// SuperCollider Workshop #2 - Server.local, zaklady zvukovej syntezy II.
+////////////////////////////////////////
+///////////// Super zvuky v SuperCollideri///////////////////
+/////////////////////////////////////////////////Fero Kiraly///////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+
+
+/////////////// OBSAH //////////////////
+////////////////////////////////////////
+
+
+    //0) Synthdef vs {}.play
+    //1) Obalky - Envelopes
+    //2) Done.freeSelf
+
+
+
+
+
+
+//// 0)
+/////////////////////  Synthdef vs {}.play
+/////////////////////////////
+
+s.boot
+
+// definovanie zvukovej syntezy ma v SC viac podob. Vsetky maju spolocnu hlavnu zvukovu funkciu tzv. { UGen graph function ...}
+// doteraz sme zvukovu syntezu definovali v najjednoduchsej podobe - funkcii ->  { ... }.play
+(
+a = {
+	arg amp = 0.1, freq = 200, speed = 8; // hlasitost, zakladna frekvencia
+	var freqMod = LFNoise0.kr(speed).range(freq, freq * 6 ).round(freq);
+	var sig = SinOsc.ar( freq + freqMod);
+	sig = sig * amp;
+	sig ! 2 // stereo
+}.play
+)
+
+a.set(\freq,100)
+a.free
+
+
+
+// definovanie zvuku cez funkciu pouzivame na rychle prototypovanie.
+// iny sposob, viac kompatknejsi ale zarovan aj robustnejsi je zadefinovat SynthDef.
+// SynthDef poskytuje viac moznosti pouzitia.
+
+
+/*
+Synthdef(\menoMojhoSyntaku, {
+
+            UGen graph function..
+}).add;
+*/
+
+// to 'add' na konci znamena aby SCserver umoznil tento SynthDef pouzivat.
+// Je jeden rozdiel v Ugen graph funkcii. V SynthDef tam potrebujeme na koniec pridat
+// UGEN Out.ar(bus,sig) aby sa vysleny zvuk dostal vonku.
+// bus = vystup, 0 = lavy kanal, 1 = pravy kanal, 2 =  nejaky treti kanal ...
+// sig = nas audio signal
+
+
+(
+SynthDef(\mojzvuk, {
+	arg amp = 0.1, freq = 200, speed = 8; // hlasitost, zakladna frekvencia
+	var freqMod = LFNoise0.kr(speed).range(freq, freq * 6 ).round(freq);
+	var sig = SinOsc.ar( freq + freqMod);
+	sig = sig * amp;
+	Out.ar(0, sig ! 2); // Out.ar UGEN ...
+}).add;
+)
+
+
+a = Synth(\mojzvuk) // teraz zacne hrat.
+a.set(\freq,100)
+a.free
+
+
+a = Synth(\mojzvuk)
+b = Synth(\mojzvuk, [\freq, 100, \speed, 4])
+
+a.set(\freq,200, \speed, 16, \amp, 0.1)
+
+a.free; b.free;
+
+
+// len sa pozrite, netreba to ovladat vsetko na zaciatku, ale ked najdete nieco co uz poznate tak si o tom precitajte viac.....................................................
+SynthDef.openHelpFile
+Synth.openHelpFile
+
+
+
+
+
+
+
+//// 1)
+/////////////////////  Obalky - Envelopes
+/////////////////////////////
+
+/*
+ - obalka je v podstate nejaka funkcia (graf), ktora ma zaciatok a koniec. Neopakuje sa cyklicky po sebe ako oscilatory.
+ - definujeme ju takto:
+
+  Env.new([bodA,bodB,bodC ...], [cas_medziAB,cas_medziBC,..], \typKrivky)
+
+*/
+
+
+Env.new([0,1,0], [1,5]).plot
+Env.new([0,1,0], [1,5], \sin).plot
+Env.new([0,1,0], [1,5], \welch).plot
+Env.new([0.01,1,0.01, 0.5, 0], [1,3,1,4], \lin).plot
+
+a = Env.new([0.01,1,0.01, 0.5, 0], [1,3,1,4], \lin) // obalka do premennej 'a'
+a.at(0.2) // hodnota na pozicii 0.2
+a.at(1.5)
+
+// Co sa stane ak zvyk vynasobime obalkou?
+// tu si musime uvedomit ze Env je len cisty ciselny graf. Na to aby sme to mohli pouzit vo zvukovbej synteze, pobtrebujeme
+// z toho spravit .kr alebo .ar
+// na to sluzi Ugen EnvGen.
+
+{ SinOsc.ar(72.midicps, mul: 0.2) }.play // takze mame tuto nadheru
+
+{ SinOsc.ar(72.midicps, mul: 0.2) * EnvGen.kr( Env.new([0,1,0], [1,1])) }.play // co sa stalo?
+
+// vyskusajte si menit parametre Env a vytvarat si ine obalky..
+
+
+Env.openHelpFile
+
+
+/*
+
+Obalky mozu byt pouzite nielen na upravu hlasitosti, ale na upravu akehokolvek parametra ked na to pride vhodne.
+frekvencia tonu, filtra
+
+*/
+
+
+
+
+
+
+//// 2)
+/////////////////////  Done.freeSelf
+/////////////////////////////
+s.reboot
+s.plotTree // toto okno si nechajte stale viditelne a spustite nasledujuci synth.
+
+
+(
+a = {
+	arg amp = 0.2;
+	Mix.fill(15, { |i|  SinOsc.ar( 100 + (i * 100), 0, (i + 1).reciprocal) }) * amp;
+}.play
+)
+
+// ked SCsynth hra, vytvori pre kazdy synth osobitny uzol - NODE, sa ukaze v s.plotTree ako biely obdlznik
+// s nejakym cislom a menom. U mna je to: 1001 temp_76
+a.free // teraz Synth prestane hrat, Node sa uvolni, biely obdznik zmizne
+
+
+(
+a = {
+	arg amp = 0.2;
+	var sig = Mix.fill(15, { |i|  SinOsc.ar( 100 + (i * 100), 0, (i + 1).reciprocal) });
+	sig * amp;
+}.play
+)
+
+a.set(\amp,0) // nic nepocut, lebo hlasitost sme dali na 0 ale Synth stale bezi
+a.set(\amp,0.1)
+a.free // Node je uvonena..
+
+
+
+// teraz pridame obalku aby sa zvuk pekne zacal a sam aj skoncil
+(
+a = {
+	arg amp = 0.2;
+	var sig = Mix.fill(15, { |i|  SinOsc.ar( 100 + (i * 100), 0, (i + 1).reciprocal) });
+	var env = EnvGen.kr( Env.new([0,1,0], [1,1]));
+	sig * amp * env;
+}.play
+)
+// synth sam skoncil prehravanie ale neuvolnil sa. Na s.plotTree je vidiet stale biely obdlzik
+s.plotTree
+
+
+/*
+predstavme si ze chceme vytvorit hudobny nastroj, kde sa hraju rozne tony, napr. nieco ako klavir.
+keby po kazdom dozneni tonu ostal v pamati scsynthu "visiet" nehrajuci synth, zahrame si tri krat po sebe
+bachov temperovany klavir a scsynth nam oznami ze uz to nedokoncime lebo nema kapacitu udrziavat vsetky
+nehrajuce tony v pamati.
+
+Na to by sme potrebovali system, kedy by sa po odohrani tonu, synth automaticky odstanil.
+Nastastie to mame a je to lahke! Je to parameter ktory ma meno doneAction:
+
+
+*/
+
+// upravime si teda nasu funkciu:
+
+(
+a = {
+	arg amp = 0.2;
+	var sig = Mix.fill(15, { |i|  SinOsc.ar( 100 + (i * 100), 0, (i + 1).reciprocal) });
+	var env = EnvGen.kr( Env.new([0,1,0], [0.2,0.5]), doneAction: Done.freeSelf); // Done.freeSelf = 2, teda mozeme pouzit aj cislo 2
+	sig * amp * env;
+}.play
+)
+s.plotTree // vidite? synth sa sam ostranuje.
+
+ Done.freeSelf // 2
+
+// vedeli by ste z tejto funkcie spravit SynthDef?
+
+
+
+// vyzeral by takto
+
+
+(
+SynthDef(\ton, {
+	arg amp = 0.2, freq = 100;
+	var sig = Mix.fill(15, { |i|  SinOsc.ar( freq + (i * freq), 0, (i + 1).reciprocal) });
+	var env = EnvGen.kr( Env.new([0,1,0], [0.2,0.5]), doneAction: Done.freeSelf);
+	Out.ar(0,sig * amp * env ! 2); // out ugen, !2 = stereo
+}).add;
+)
+
+Synth(\ton)
+Synth(\ton, [\freq, 50.midicps])
+Synth(\ton, [\freq, 45.midicps])
+Synth(\ton, [\freq, 47.midicps])
+Synth(\ton, [\freq, 49.midicps])
+Synth(\ton, [\freq, 50.midicps])
+
+// no krasa... co vam poviem
+Synth(\ton, [\freq, 30.midicps])
+
+
+
+
+
+
+(
+
+SynthDef(\riley,  {
+
+	arg freq = 400, pan =0, noiseFreq = 10, numHarm = 10, amp = 0.1;
+    var mod = LFNoise0.kr(noiseFreq).range(freq,freq*numHarm).round(freq)  / 3;
+	var env = Env.new([0, 1, 0.9, 0], [0.1, 0.5, 1],[-5, 0, -5]).kr(doneAction:2);
+	var sig = LFSaw.ar(  mod ) * amp  * env;
+	sig = Pan2.ar(sig, pan);
+	Out.ar(0, sig ); // musim pridat
+
+}).add;
+
+)
+
+
+
+a = Synth(\riley, [\freq, rrand(100,1000).round(100)])
+
+// no a co je toto, tak o tom nabuduce.
+// mozete sa s tym samozrejme pohrat..
+
+(
+
+Pbindef(\sekvencia,
+		\instrument, \riley,
+		\dur, 1,
+		\freq, Pseq([400,300],inf),
+		\pan,  Pseq([-1,1],inf),
+		\noiseFreq,  Pseq([10,20],inf),
+		\numHarm, Pseq( (3..6) ,inf),
+		\amp, 0.1
+	).play
+
+)
+
+Pbindef(\sekvencia).stop
+
+
+
+
+
+
+
+
+
+
+
