@@ -1,0 +1,254 @@
+////////////////////////////////////////////////////////////////////
+/////////// SuperCollider Workshop #3 - SynthDef, OSCdef.
+////////////////////////////////////////
+///////////// Super zvuky v SuperCollideri///////////////////
+/////////////////////////////////////////////////Fero Kiraly///////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+
+
+/////////////// OBSAH //////////////////
+////////////////////////////////////////
+
+
+    //0)  Podmienky / Control structures
+    //1)  OSC komunikacia
+
+
+
+
+
+
+s.boot // Ctrl + B
+
+// na uvod jeden SyntDef
+(
+
+SynthDef(\synth2, {
+	arg freq = 380, amp = 0.2, depth = 10, freqVib = 8,vibMod = 20,  atk = 0.2, rel = 1 ;
+	var vibr = SinOsc.kr(vibMod) * SinOsc.kr(XLine.kr(freqVib,0.1,atk + rel ) ).range(depth * -1, depth);
+	var sig = LFTri.ar(freq + vibr) * amp;
+	var bas = FSinOsc.ar(50,mul:0.1);
+	var env = EnvGen.ar(Env.new([0,1,0],[atk,rel + 0.5], -4), doneAction:2);
+	sig = Resonz.ar(sig, Line.kr(10000,50,atk+rel),0.5);
+	sig = Pan2.ar((sig + bas) * env, 0);
+	Out.ar(0, sig);
+}).add
+)
+
+Env.new([0,1,0],[0.2,1], -4).test.plot // -4 hovori o tvare krivky
+
+
+// vyskusajte menit nastavenia ..
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 40, \rel, 5, \amp, 0.1,\depth,200])
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 40, \rel, 5, \amp, 0.1,\depth,20])
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 40, \rel, 5, \amp, 0.1,\depth,1450])
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 160, \rel, 10, \amp, 0.1,\depth,145])
+
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 160, \rel, 10, \amp, 0.1,\depth,145, \vibMod,0.2])
+Synth(\synth2, [\freq, rrand(440,450),\freqVib, 460, \rel, 10, \amp, 0.05,\depth,12145, \vibMod,0.2])
+
+
+
+
+
+
+////1)
+/////////////////////  Podmienky / Control structures
+/////////////////////////////
+
+/*
+
+ Su to velmi bezne, a prudko pouzitelne zalezitosti, pritomne v kazdom programovacom jazyku
+
+ *AK je nebo modre, urob TOTO, INAK urob HENTO*
+  if(nebo == modra, {TOTO}, {HENTO})
+
+  v Helpe najdete tuto definiciu. pozrite sa na to.
+  if(expr, trueFunc, falseFunc);
+
+  DOLEZITE
+  ked porovnavame pouzivame  == ( dve znaky rovna sa)
+
+
+*/
+
+5 == 5 // true
+5 < 10 // true
+45 > 100 // false
+5 != 6 // true ( nerovna sa)
+
+c = 5
+if( c == 5 ,{"ano je".postln}, {"nie je".postln});
+// if( podmienka, {pravda}, {nepravda})
+
+c >= 6
+c <= 6
+c != 6 // nerovna sa
+
+// Existuje toho viac. Najdete to v Helpe:
+HelpBrowser.openHelpFor("Control Structures")
+
+
+/*
+velmi uzitocna je este metoda 'do'
+*/
+
+3.do({ |item| item.postln });
+
+(100..110).do({ |item| item.postln });
+
+(128,130..140).do({ |item| item.postln });
+
+
+
+
+//// 1)
+/////////////////////  OSC komunikacia
+/////////////////////////////
+
+/*
+ OSC je skratka pre Open Sound Control
+ - je to protokol, ktory pouzivaju rozne programy na komunikaciu medzi sebou
+ - je to nieco ako vylepsene MIDI
+ - pomocou OSC prenasate data ( cisla, stringy, polia), alebo iba jednoducho signaly
+
+*/
+    //WIKIPEDIA
+    HelpBrowser.goTo("https://en.wikipedia.org/wiki/Open_Sound_Control")
+
+/*
+ komunkacia pomocou OSC je mozna v tychto programoch ( urcite je ich viac..)
+
+ * puredata
+ * processing
+ * ardour
+ * iannix
+ * MAX
+ * ableton
+ * (fluxus)
+
+  -Casty priklad pouzitia je komunikacia medzi grafickym a hudobnym programom kedy
+   napr.  vizualny obraz ide presne do hudby.
+
+  V zasade je len na nas ako to vyuzijeme.
+
+  Mozeme mat vela zabavy pouzitim mobilu alebo tabletu, a v nom nejakej appky ktora vie minimalne
+  posielat OSC.
+
+  Je ich vela, treba si vyskusat ktora vyhovuje. Niektore su zadarmo, niektore nie.
+
+  Ja pouzivam TouchOSC, plati sa za nu. Je k nej aj editor kde sa da naklikat prostredie ktore chcete.
+  HelpBrowser.goTo("https://hexler.net/software/touchosc")
+
+*/
+HelpBrowser.openBrowsePage("External Control>OSC")
+
+/*
+   OSC funguje na sieti. Internet nie je potrebny
+   poznam tri moznosti:
+   - WIFI ( teda dva pocitace, alebo mobil a pocitac su na TEJ ISTEJ WIFI sieti)
+   - LAN ( dva pocitace su prepojene sietovym kablom)
+   - loopback 127.0.0.1 - dva programy v ramci jedneho pocitaca komunikuju na tzv loopback network. Teda nejaka vnutorna siet v ramci jedneho pocitaca
+
+
+
+*/
+
+
+HelpBrowser.goTo("https://supercollider.github.io/community/systems-interfacing-with-sc")
+
+
+/*
+ Pre uspesnu komunikaciu treba:
+ - vediet IP adresy oboch zariadeni IPadresa ma tvar xxx.xxx.xxx.xxx kde xxx je cislo
+ - porty na ktorych aplikacie "pocuvaju"
+ - IP adresu pocitaca zistite v nastaveniach siete vasho operacneho systemu
+ - na linuxe prikazom "ip addr show"
+ - port na ktorom naslucha supercollider zistite prikazom:NetAddr.langPort
+*/
+
+NetAddr.langPort
+
+
+
+
+
+// na vyvolanie akcie, pri prichadzajucej OSC sprave pouzijeme OSCdef
+OSCdef.openHelpFile
+// OSCdef.new(key, func, path, srcID, recvPort, argTemplate, dispatcher)
+// OSCdef(\nejakeMeno, { arg msg;  funkcia, to co ma robit, kde v argumente je sprava},'/cesta/odkial/prisiel/signal')
+
+
+// OSC sprava ( message) ma vzdy tvar: [PATH,  DATA] -  je to teda pole prvkov ( Array)
+// to znamena: /screen1/slider1 0.256
+// kde '/screen1/slider1' je PATH
+// 0.256 su nase DATA
+// kedze je to Array tak k jednotlivym prvkom vieme priustupovat osobitne
+
+// dajme tomu ze:
+m = ['/screen1/slider1', 0.256]
+m[0] // /screen1/slider1
+m[1] // 0.256
+
+(
+OSCdef(\pocuvam_a_hram1, { |m| if( m[1] == 1, {Synth(\synth2, [\freq, 200])} ) }, '/1/push1');
+OSCdef(\pocuvam_a_hram2, { |m| if( m[1] == 1, {Synth(\synth2, [\freq, 300])} ) }, '/1/push2');
+OSCdef(\pocuvam_a_hram3, { |m| if( m[1] == 1, {Synth(\synth2, [\freq, 400])} ) }, '/1/push3');
+OSCdef(\pocuvam_a_hram4, { |m| if( m[1] == 1, {Synth(\synth2, [\freq, 500])} ) }, '/1/push4');
+)
+
+
+
+
+
+
+
+/// a toto bola ukazka mimo nasu temu, pouzitia zvukoveho vstupu ( mikrofonu)
+SoundIn.openHelpFile
+
+
+// POZOR treba pouzit sluchatka koli feedbacku
+(
+
+{
+	var sig = SoundIn.ar([0,1]);
+	var mod = SinOsc.ar(1000).range(0,1);
+	sig * mod
+}.play
+
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
